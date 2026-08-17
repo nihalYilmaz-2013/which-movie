@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ t.site_title }} — {{ t.reel_heading }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script>
+    // Sayfa boyanmadan önce kayıtlı temayı uygula (yanıp sönmeyi önler)
+    (function () {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light' || saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <div class="film-grain"></div>
+
+  <header class="site-header">
+    <div class="header-bar">
+      <div class="lang-switch">
+        {% for code in supported_langs %}
+        <form method="POST" action="{{ url_for('set_lang', lang_code=code) }}" class="lang-form">
+          <button type="submit" class="lang-btn {% if lang == code %}active{% endif %}">{{ code|upper }}</button>
+        </form>
+        {% endfor %}
+      </div>
+      <button id="theme-toggle" class="theme-btn" type="button" aria-label="{{ t.theme_toggle }}" title="{{ t.theme_toggle }}">
+        <span class="icon-sun">☀</span>
+        <span class="icon-moon">☾</span>
+      </button>
+    </div>
+    <div class="header-inner">
+      <span class="reel-mark">◎</span>
+      <h1 class="site-title">{{ t.site_title }}</h1>
+      <span class="site-tagline">{{ t.site_tagline }}</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="ticket-search">
+      <form method="POST" class="ticket" autocomplete="off">
+        <div class="ticket-perf ticket-perf-top"></div>
+        <div class="ticket-body">
+          <label for="query" class="ticket-label">{{ t.ticket_label }}</label>
+          <div class="ticket-row">
+            <input
+              type="text"
+              id="query"
+              name="query"
+              placeholder="{{ t.placeholder }}"
+              value="{{ query }}"
+              required
+            />
+            <button type="submit">{{ t.search_button }}</button>
+          </div>
+        </div>
+        <div class="ticket-perf ticket-perf-bottom"></div>
+      </form>
+
+      {% if error %}
+        <p class="error-note">⚠ {{ error }}</p>
+      {% endif %}
+    </section>
+
+    {% if source %}
+    <section class="source-strip">
+      <div class="source-poster">
+        {% if source.poster %}
+          <img src="{{ source.poster }}" alt="{{ source.title }}" />
+        {% else %}
+          <div class="poster-fallback">?</div>
+        {% endif %}
+      </div>
+      <div class="source-info">
+        <span class="eyebrow">{{ t.found_eyebrow }} · {{ source.media_type }}</span>
+        <h2>{{ source.title }} <span class="year">({{ source.year }})</span></h2>
+        <div class="genre-tags">
+          {% for g in source.genres %}<span class="tag">{{ g }}</span>{% endfor %}
+        </div>
+        <p class="overview">{{ source.overview }}</p>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if recommendations %}
+    <section class="reel-strip">
+      <h3 class="reel-heading">{{ t.reel_heading }}</h3>
+      <div class="frame-grid">
+        {% for item in recommendations %}
+        <article class="frame-card" data-idx="{{ loop.index0 }}" tabindex="0" role="button"
+                  aria-haspopup="dialog" aria-label="{{ item.title }} — {{ t.read_more }}">
+          <div class="sprockets"></div>
+          <div class="poster-wrap">
+            {% if item.poster %}
+              <img src="{{ item.poster }}" alt="{{ item.title }}" loading="lazy" />
+            {% else %}
+              <div class="poster-fallback">?</div>
+            {% endif %}
+            <span class="rating-badge">★ {{ item.rating }}</span>
+          </div>
+          <div class="frame-info">
+            <h4>{{ item.title }}</h4>
+            <p class="meta">{{ item.media_type }} · {{ item.year }}</p>
+            <p class="mini-overview">{{ item.overview[:110] }}{% if item.overview|length > 110 %}…{% endif %}</p>
+            <span class="read-more-hint">{{ t.read_more }} →</span>
+          </div>
+          <div class="sprockets"></div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </main>
+
+  <footer class="site-footer">
+    <p>{{ t.footer_note }}</p>
+  </footer>
+
+  {% if recommendations %}
+  <div id="detail-modal" class="modal-overlay" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button type="button" id="modal-close" class="modal-close" aria-label="{{ t.close_label }}">✕</button>
+      <div class="modal-poster">
+        <img id="modal-poster-img" src="" alt="" />
+      </div>
+      <div class="modal-content">
+        <span id="modal-eyebrow" class="eyebrow"></span>
+        <h2 id="modal-title"></h2>
+        <div id="modal-genres" class="genre-tags"></div>
+        <p id="modal-overview" class="overview"></p>
+      </div>
+    </div>
+  </div>
+  <script type="application/json" id="recs-data">{{ recommendations|tojson }}</script>
+  {% endif %}
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
